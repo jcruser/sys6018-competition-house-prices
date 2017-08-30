@@ -1,0 +1,7 @@
+
+# Nonparmetric Approach
+
+library(tidyverse)
+
+train <- read.csv("train.csv")  # Read in train data
+test <- read.csv("test.csv")    # Read in tesdt data 
