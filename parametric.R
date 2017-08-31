@@ -159,9 +159,11 @@ av_diff
 #FINAL FIRST PREDICTIONS -- SCORE = 0.22 on Kaggle
 write.table(mypreds.lm1, file = "eih2nn_houses_lm1.csv", row.names=F, sep=",") #Write out to a csv
 
-#Just playing around...
 
-train.lg1 <- glm(SalePrice~MSSubClass+MSZoning+LotFrontage+LotArea+Street+LotShape+LandContour+
+
+#SECOND PARAMETRIC USING ALL VARIABLES TO START
+
+train.lm3 <- lm(SalePrice~MSSubClass+MSZoning+LotFrontage+LotArea+Street+LotShape+LandContour+
                    LotConfig+LandSlope+Neighborhood+Condition1+Condition2+BldgType+HouseStyle+OverallQual+
                    OverallCond+YearBuilt+YearRemodAdd+RoofStyle+RoofMatl+Exterior1st+Exterior2nd+MasVnrType+MasVnrArea+
                    ExterQual+ExterCond+Foundation+BsmtQual+BsmtCond+BsmtExposure+BsmtFinType1+BsmtFinSF1+BsmtFinType2+
@@ -169,6 +171,32 @@ train.lg1 <- glm(SalePrice~MSSubClass+MSZoning+LotFrontage+LotArea+Street+LotSha
                    GrLivArea+BsmtFullBath+BsmtHalfBath+FullBath+HalfBath+BedroomAbvGr+KitchenAbvGr+KitchenQual+TotRmsAbvGrd+
                    Functional+Fireplaces+GarageType+GarageYrBlt+GarageFinish+GarageCars+GarageArea+GarageQual+GarageCond+
                    PavedDrive+WoodDeckSF+OpenPorchSF+EnclosedPorch+TriSsnPorch+ScreenPorch+PoolArea+MiscVal+MoSold+YrSold+
-                   SaleType+SaleCondition, data=train.2, family = "binomial")
+                   SaleType+SaleCondition, data=train.2)
+summary(train.lm3)
 
-summary(train.lg1)
+train.lm4 <- lm(SalePrice~LotArea+OverallQual+OverallCond+YearBuilt+RoofMatl+
+                  ExterQual+BsmtFinSF1, data=train.2)
+summary(train.lm4)
+
+train.lm5 <- lm(SalePrice~LotArea+OverallQual+RoofMatl+
+                  ExterQual+BsmtFinSF1, data=train.2)
+summary(train.lm5)
+mse.lm5 <- mean(train.lm5$residuals^2)
+mse.lm5 #1552411570...
+
+#UNABLE TO CHECK ON VALIDATION DUE TO ROOFING MATERIALS
+
+#WRITE UP TEST PREDITIONS
+predict(train.lm5, newdata = test) #Predict using the wt and year variables, as in p3.lm2
+mypreds.lm2 <- data.frame(predict(train.lm5, newdata = test))  #Put these values into a vector
+
+colnames(mypreds.lm2)[1] <- "SalePrice"
+
+Id = 1461:2919
+mypreds.lm2$Id <- Id
+mypreds.lm3 <- mypreds.lm2[,c(2,1)] 
+
+mypreds.lm3[757,2] <- 0
+
+#FINAL FIRST PREDICTIONS -- SCORE = 0.25 on Kaggle
+write.table(mypreds.lm3, file = "eih2nn_houses_lm2.csv", row.names=F, sep=",") #Write out to a csv
