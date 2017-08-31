@@ -41,12 +41,12 @@ test[factors] = lapply(test[factors], factor) #Also do this for the test set
 validate[factors] = lapply(validate[factors], factor) #Also for the validation set
 
 
-#Change all columns with integers to the numeric class -- NOT WORKING RIGHT NOW
+#Change all columns with integers to the numeric class
 train.2[ , (!names(train.2) %in% factors)] = lapply(train.2[ , (!names(train.2) %in% factors)], as.numeric)
 test[ , (!names(test) %in% factors)] = lapply(test[ , (!names(test) %in% factors)], as.numeric)
 validate[ , (!names(validate) %in% factors)] = lapply(validate[ , (!names(validate) %in% factors)], as.numeric)
 
-sapply(train.2, class) #Check classes again to make sure everything worked correctly
+sapply(train.2, class) #Check classes to make sure everything worked correctly
 
 #Create mode function
 Mode <- function(x, na.rm) {
@@ -109,7 +109,6 @@ names(validate)[names(validate) == '3SsnPorch'] <- 'TriSsnPorch'
 
 
 
-
 ##### PARAMETRIC APPROACH #####
 
 #Run a linear regression model with a few numeric variables of interest
@@ -137,11 +136,11 @@ summary(train.lm1)
 #F-statistic: 216.8 on 10 and 719 DF,  p-value: < 2.2e-16
 
 #Re-run with fewer variables, based on significance from last run
-train.lm2 <- lm(SalePrice~LotArea+YearBuilt+TotalBsmtSF+FirstFlrSF+SecFlrSF, data=train.2)
+train.lm2 <- lm(SalePrice~LotArea+YearBuilt+TotalBsmtSF+FirstFlrSF+SecFlrSF+PoolArea, data=train.2)
 summary(train.lm2) #All have high significance
 
 mse.lm1 <- mean(train.lm2$residuals^2)
-mse.lm1 #1501209518...
+mse.lm1 #2091623919...
 
 predict(train.lm2, newdata = test) #Predict using the wt and year variables, as in p3.lm2
 mypreds.lm <- data.frame(predict(train.lm2, newdata = test))  #Put these values into a vector
@@ -152,36 +151,24 @@ Id = 1461:2919
 mypreds.lm$Id <- Id
 mypreds.lm1 <- mypreds.lm[,c(2,1)] 
 
+validpreds <- predict(train.lm2, newdata = validate)
+validate$predictions <- validpreds
+av_diff <- mean(abs(validate$predictions - validate$SalePrice))
+av_diff
+
 #FINAL FIRST PREDICTIONS -- SCORE = 0.22 on Kaggle
 write.table(mypreds.lm1, file = "eih2nn_houses_lm1.csv", row.names=F, sep=",") #Write out to a csv
 
-
-
-
-
 #Just playing around...
 
-#train.lg1 <- glm(SalePrice~MSSubClass+MSZoning+LotFrontage+LotArea+Street+LotShape+LandContour+
-#Utilities+LotConfig+LandSlope+Neighborhood+Condition1+Condition2+BldgType+HouseStyle+OverallQual+
-#OverallCond+YearBuilt+YearRemodAdd+RoofStyle+RoofMatl+Exterior1st+Exterior2nd+MasVnrType+MasVnrArea+
-#ExterQual+ExterCond+Foundation+BsmtQual+BsmtCond+BsmtExposure+BsmtFinType1+BsmtFinSF1+BsmtFinType2+
-#BsmtFinSF2+BsmtUnfSF+TotalBsmtSF+Heating+HeatingQC+CentralAir+Electrical+FirstFlrSF+SecFlrSF+LowQualFinSF+
-#GrLivArea+BsmtFullBath+BsmtHalfBath+FullBath+HalfBath+BedroomAbvGr+KitchenAbvGr+KitchenQual+TotRmsAbvGrd+
-#Functional+Fireplaces+GarageType+GarageYrBlt+GarageFinish+GarageCars+GarageArea+GarageQual+GarageCond+
-#PavedDrive+WoodDeckSF+OpenPorchSF+EnclosedPorch+TriSsnProch+ScreenPorch+PoolArea+MiscVal+MoSold+YrSold+
-#SaleType+SaleCondition, data=train.2, family = "binomial")
+train.lg1 <- glm(SalePrice~MSSubClass+MSZoning+LotFrontage+LotArea+Street+LotShape+LandContour+
+                   LotConfig+LandSlope+Neighborhood+Condition1+Condition2+BldgType+HouseStyle+OverallQual+
+                   OverallCond+YearBuilt+YearRemodAdd+RoofStyle+RoofMatl+Exterior1st+Exterior2nd+MasVnrType+MasVnrArea+
+                   ExterQual+ExterCond+Foundation+BsmtQual+BsmtCond+BsmtExposure+BsmtFinType1+BsmtFinSF1+BsmtFinType2+
+                   BsmtFinSF2+BsmtUnfSF+TotalBsmtSF+Heating+HeatingQC+CentralAir+Electrical+FirstFlrSF+SecFlrSF+LowQualFinSF+
+                   GrLivArea+BsmtFullBath+BsmtHalfBath+FullBath+HalfBath+BedroomAbvGr+KitchenAbvGr+KitchenQual+TotRmsAbvGrd+
+                   Functional+Fireplaces+GarageType+GarageYrBlt+GarageFinish+GarageCars+GarageArea+GarageQual+GarageCond+
+                   PavedDrive+WoodDeckSF+OpenPorchSF+EnclosedPorch+TriSsnPorch+ScreenPorch+PoolArea+MiscVal+MoSold+YrSold+
+                   SaleType+SaleCondition, data=train.2, family = "binomial")
 
-#VALIDATION...
-
-probs <- as.vector(predict(###, type="response")) #Test the full model on the training set
-preds <- rep(0,###)  # Initialize prediction vector
-preds
-mean(preds)
-#
-
-probs<-as.vector(predict(###,newdata=validate, type="response")) #Test the full model on the validation set
-preds <- rep(0,###)  # Initialize prediction vector
-preds
-mean(preds)
-#
-
+summary(train.lg1)
