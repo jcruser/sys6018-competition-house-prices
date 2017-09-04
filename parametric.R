@@ -34,7 +34,7 @@ factors <- c("MSZoning","Street","LotShape","LandContour","Utilities","LotConfig
              "Exterior1st","Exterior2nd","MasVnrType","ExterQual","ExterCond","Foundation","BsmtQual",
              "BsmtCond","BsmtExposure","BsmtFinType1", "BsmtFinType2","BsmtFinSF2","Heating","HeatingQC","CentralAir",
              "Electrical","KitchenQual","Functional","GarageType","GarageFinish","GarageQual","GarageCond",
-             "PavedDrive","SaleType","SaleCondition")
+             "PavedDrive","SaleType","SaleCondition","Alley","PoolQC", "Fence", "MiscFeature", "FireplaceQu")
 
 train.2[factors] = lapply(train.2[factors], factor)
 test[factors] = lapply(test[factors], factor) #Also do this for the test set
@@ -200,3 +200,4 @@ mypreds.lm3[757,2] <- 0
 
 #FINAL FIRST PREDICTIONS -- SCORE = 0.25 on Kaggle
 write.table(mypreds.lm3, file = "eih2nn_houses_lm2.csv", row.names=F, sep=",") #Write out to a csv
+
