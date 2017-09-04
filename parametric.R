@@ -201,3 +201,12 @@ mypreds.lm3[757,2] <- 0
 #FINAL FIRST PREDICTIONS -- SCORE = 0.25 on Kaggle
 write.table(mypreds.lm3, file = "eih2nn_houses_lm2.csv", row.names=F, sep=",") #Write out to a csv
 
+<<<<<<< HEAD
+=======
+# Non-parametric Approach
+
+install.packages("class")
+library(class)  # install package class to run knn function 
+
+pred <- knn(train.2, test, train.2$SalePrice, k=3)  # gettig errors of missing value...
+>>>>>>> cee0657911f345c9c0a1a80bc16bbca796dfa48f
