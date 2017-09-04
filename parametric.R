@@ -156,9 +156,8 @@ validate$predictions <- validpreds
 av_diff <- mean(abs(validate$predictions - validate$SalePrice))
 av_diff #27827.07
 
-#FINAL FIRST PREDICTIONS -- SCORE = 0.22 on Kaggle
+#FIRST LM METHOD -- SCORE = 0.22 on Kaggle
 write.table(mypreds.lm1, file = "eih2nn_houses_lm1.csv", row.names=F, sep=",") #Write out to a csv
-
 
 
 #SECOND PARAMETRIC USING ALL VARIABLES TO START
@@ -200,11 +199,11 @@ mypreds.lm3 <- mypreds.lm2[,c(2,1)]
 
 mypreds.lm3[757,2] <- 0
 
-#FINAL FIRST PREDICTIONS -- SCORE = 0.25 on Kaggle
+#SECOND LM METHOD -- SCORE = 0.25 on Kaggle
 write.table(mypreds.lm3, file = "eih2nn_houses_lm2.csv", row.names=F, sep=",") #Write out to a csv
 
 
-# Non-parametric Approach
+#Non-parametric Approach
 
 #Install and load class and caret packages to run knn function 
 install.packages("class")
@@ -261,11 +260,8 @@ knn.preds <- data.frame(predict(knn.fit, newdata = test.2))
 
 colnames(knn.preds)[1] <- "SalePrice"
 knn.preds$Id <- Id
-knn.preds1 <- knn.preds[,c(2,1)] 
+knn.preds1 <- knn.preds[,c(2,1)]
 
-
-#FINAL FIRST PREDICTIONS -- SCORE = 0.25 on Kaggle
+#KNN PREDICTIONS -- SCORE = 0.194 on Kaggle (PERSONAL BEST)
 write.table(knn.preds1, file = "eih2nn_houses_knn.csv", row.names=F, sep=",") #Write out to a csv
-
-
 
