@@ -278,8 +278,8 @@ validate.3$knnpredictions <- knn.validate
 for (i in 1:nrow(validate.3)) {
   ((abs((validate.3[i,"knnpredictions"])-(validate.3[i,"SalePrice"])))/(validate.3[i,"SalePrice"]))*100 -> validate.3[i,"PercentOff"]
 }
-AvPercentOff <- mean(validate.3$PercentOff)
-AvPercentOff #12.77642 % off of true sale price on average
+AvPercentOffKNN <- mean(validate.3$PercentOff)
+AvPercentOffKNN #12.77642 % off of true sale price on average
 
 knn.preds <- predict(knn.fit, newdata = test.2)
 knn.preds <- data.frame(predict(knn.fit, newdata = test.2))
@@ -290,3 +290,37 @@ knn.preds1 <- knn.preds[,c(2,1)]
 
 #KNN PREDICTIONS -- SCORE = 0.194 on Kaggle (PERSONAL BEST)
 write.table(knn.preds1, file = "eih2nn_houses_knn.csv", row.names=F, sep=",") #Write out to a csv
+
+
+##### NON-PARAMETRIC APPROACH WITH KNN AND K=13 #####
+
+set.seed(150)
+knn.fit2 <- train(SalePrice ~., data = train.3, method = "knn",
+                 trControl=trctrl,
+                 preProcess = c("center", "scale"),
+                 tuneLength = 10)
+knn.fit2
+#K = 13
+
+validate.5 <- subset(validate.2, select = -c(predictions, predictions2, PercentOff1, PercentOff2)) #Create new df without those columns
+validate.6 <- subset(validate.2, select = -c(SalePrice))
+
+knn.validate2 <- predict(knn.fit2, newdata = validate.6)
+validate.5$knnpredictions2 <- knn.validate2
+
+for (i in 1:nrow(validate.5)) {
+  ((abs((validate.5[i,"knnpredictions2"])-(validate.5[i,"SalePrice"])))/(validate.5[i,"SalePrice"]))*100 -> validate.5[i,"PercentOff"]
+}
+AvPercentOffKNN2 <- mean(validate.5$PercentOff)
+AvPercentOffKNN2 #12.34 % off of true sale price on average
+
+knn.preds2 <- data.frame(predict(knn.fit2, newdata = test.2))
+
+colnames(knn.preds2)[1] <- "SalePrice"
+knn.preds2$Id <- Id
+knn.preds3 <- knn.preds2[,c(2,1)]
+
+#KNN PREDICTIONS - SCORE = 0.195 on kaggle (not as good as when k=9)
+write.table(knn.preds3, file = "eih2nn_houses_knn2.csv", row.names=F, sep=",") #Write out to a csv
+
+
