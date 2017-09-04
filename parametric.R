@@ -1,6 +1,5 @@
 #Parametric Approach
 
-
 ##### DATA CLEANING AND PREPARATION #####
 
 library(tidyverse) #Load the core tidyverse packages: ggplot2, tibble, tidyr, readr, purrr, and dplyr
@@ -153,8 +152,12 @@ mypreds.lm1 <- mypreds.lm[,c(2,1)]
 
 validpreds <- predict(train.lm2, newdata = validate)
 validate$predictions <- validpreds
-av_diff <- mean(abs(validate$predictions - validate$SalePrice))
-av_diff #27827.07
+
+for (i in 1:nrow(validate)) {
+  ((abs((validate[i,"predictions"])-(validate[i,"SalePrice"])))/(validate[i,"predictions"]))*100 -> validate[i,"PercentOff1"]
+}
+AvPercentOff.lm1 <- mean(validate$PercentOff1)
+AvPercentOff.lm1 #15.31 % off of true sale price on average
 
 #FIRST LM METHOD -- SCORE = 0.22 on Kaggle
 write.table(mypreds.lm1, file = "eih2nn_houses_lm1.csv", row.names=F, sep=",") #Write out to a csv
@@ -180,12 +183,16 @@ summary(train.lm4)
 train.lm5 <- lm(SalePrice~LotArea+OverallQual+ExterQual+BsmtFinSF1, data=train.2)
 summary(train.lm5)
 mse.lm5 <- mean(train.lm5$residuals^2)
-mse.lm5 #1764665617...
+mse.lm5 #1860451135...
 
 validpreds2 <- predict(train.lm5, newdata = validate)
 validate$predictions2 <- validpreds2
-av_diff2 <- mean(abs(validate$predictions2 - validate$SalePrice))
-av_diff2 #27491.97
+
+for (i in 1:nrow(validate)) {
+  ((abs((validate[i,"predictions2"])-(validate[i,"SalePrice"])))/(validate[i,"predictions2"]))*100 -> validate[i,"PercentOff2"]
+}
+AvPercentOff.lm2 <- mean(validate$PercentOff2)
+AvPercentOff.lm2 #16.29024 % off of true sale price on average
 
 #WRITE UP TEST PREDITIONS
 predict(train.lm5, newdata = test) #Predict using the wt and year variables, as in p3.lm2
@@ -199,7 +206,7 @@ mypreds.lm3 <- mypreds.lm2[,c(2,1)]
 
 mypreds.lm3[757,2] <- 0
 
-#SECOND LM METHOD -- SCORE = 0.25 on Kaggle
+#SECOND LM METHOD -- SCORE = 0.25 on Kaggle (worse score, as expected)
 write.table(mypreds.lm3, file = "eih2nn_houses_lm2.csv", row.names=F, sep=",") #Write out to a csv
 
 
@@ -246,16 +253,19 @@ knn.fit
 #RMSE was used to select the optimal model using  the smallest value.
 #The final value used for the model was k = 9.
 
-validate.3 <- subset(validate.2, select = -c(predictions, predictions2)) #Create new df without those columns
+validate.3 <- subset(validate.2, select = -c(predictions, predictions2, PercentOff1, PercentOff2)) #Create new df without those columns
 validate.4 <- subset(validate.2, select = -c(SalePrice))
 
 knn.validate <- predict(knn.fit, newdata = validate.4)
 validate.3$knnpredictions <- knn.validate
-av_diff3 <- mean(abs(validate.3$knnpredictions - validate.3$SalePrice))
-av_diff3 #21986.34
+
+for (i in 1:nrow(validate.3)) {
+  ((abs((validate.3[i,"knnpredictions"])-(validate.3[i,"SalePrice"])))/(validate.3[i,"SalePrice"]))*100 -> validate.3[i,"PercentOff"]
+}
+AvPercentOff <- mean(validate.3$PercentOff)
+AvPercentOff #12.77642 % off of true sale price on average
 
 knn.preds <- predict(knn.fit, newdata = test.2)
-
 knn.preds <- data.frame(predict(knn.fit, newdata = test.2))
 
 colnames(knn.preds)[1] <- "SalePrice"
@@ -264,4 +274,5 @@ knn.preds1 <- knn.preds[,c(2,1)]
 
 #KNN PREDICTIONS -- SCORE = 0.194 on Kaggle (PERSONAL BEST)
 write.table(knn.preds1, file = "eih2nn_houses_knn.csv", row.names=F, sep=",") #Write out to a csv
+
 
