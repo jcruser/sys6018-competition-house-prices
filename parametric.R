@@ -154,7 +154,7 @@ mypreds.lm1 <- mypreds.lm[,c(2,1)]
 validpreds <- predict(train.lm2, newdata = validate)
 validate$predictions <- validpreds
 av_diff <- mean(abs(validate$predictions - validate$SalePrice))
-av_diff
+av_diff #27827.07
 
 #FINAL FIRST PREDICTIONS -- SCORE = 0.22 on Kaggle
 write.table(mypreds.lm1, file = "eih2nn_houses_lm1.csv", row.names=F, sep=",") #Write out to a csv
@@ -178,13 +178,15 @@ train.lm4 <- lm(SalePrice~LotArea+OverallQual+OverallCond+YearBuilt+RoofMatl+
                   ExterQual+BsmtFinSF1, data=train.2)
 summary(train.lm4)
 
-train.lm5 <- lm(SalePrice~LotArea+OverallQual+RoofMatl+
-                  ExterQual+BsmtFinSF1, data=train.2)
+train.lm5 <- lm(SalePrice~LotArea+OverallQual+ExterQual+BsmtFinSF1, data=train.2)
 summary(train.lm5)
 mse.lm5 <- mean(train.lm5$residuals^2)
-mse.lm5 #1552411570...
+mse.lm5 #1764665617...
 
-#UNABLE TO CHECK ON VALIDATION DUE TO ROOFING MATERIALS
+validpreds2 <- predict(train.lm5, newdata = validate)
+validate$predictions2 <- validpreds2
+av_diff2 <- mean(abs(validate$predictions2 - validate$SalePrice))
+av_diff2 #27491.97
 
 #WRITE UP TEST PREDITIONS
 predict(train.lm5, newdata = test) #Predict using the wt and year variables, as in p3.lm2
@@ -201,12 +203,17 @@ mypreds.lm3[757,2] <- 0
 #FINAL FIRST PREDICTIONS -- SCORE = 0.25 on Kaggle
 write.table(mypreds.lm3, file = "eih2nn_houses_lm2.csv", row.names=F, sep=",") #Write out to a csv
 
-<<<<<<< HEAD
-=======
+
 # Non-parametric Approach
 
 install.packages("class")
 library(class)  # install package class to run knn function 
 
-pred <- knn(train.2, test, train.2$SalePrice, k=3)  # gettig errors of missing value...
->>>>>>> cee0657911f345c9c0a1a80bc16bbca796dfa48f
+validdrops <- c("predictions","predictions2")
+validate.2 <- validate[ , !(names(validate) %in% validdrops)]
+validate.3 <- validate.2[ , (!names(train.2) %in% factors)]
+
+train.3 <- train.2[ , (!names(train.2) %in% factors)]
+
+predknn1 <- knn(train = train.3, test = validate.3, cl = train.2$SalePrice, k=3) 
+
