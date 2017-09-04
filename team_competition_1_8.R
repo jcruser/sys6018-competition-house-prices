@@ -174,6 +174,7 @@ write.table(mypreds.lm1, file = "eih2nn_houses_lm1.csv", row.names=F, sep=",") #
 
 
 ##### ANOTHER PARAMETRIC APPROACH WITH ALL VARIABLES TO START #####
+##### SELECTED ONLY VARIABLES THAT HAD A MAJORITY OF SUBVARIABLES WITH HIGH SIGNIFICANCE  #####
 
 train.lm3 <- lm(SalePrice~MSSubClass+MSZoning+LotFrontage+LotArea+Street+LotShape+LandContour+
                    LotConfig+LandSlope+Neighborhood+Condition1+Condition2+BldgType+HouseStyle+OverallQual+
@@ -184,6 +185,7 @@ train.lm3 <- lm(SalePrice~MSSubClass+MSZoning+LotFrontage+LotArea+Street+LotShap
                    Functional+Fireplaces+GarageType+GarageYrBlt+GarageFinish+GarageCars+GarageArea+GarageQual+GarageCond+
                    PavedDrive+WoodDeckSF+OpenPorchSF+EnclosedPorch+TriSsnPorch+ScreenPorch+PoolArea+MiscVal+MoSold+YrSold+
                    SaleType+SaleCondition, data=train.2)
+
 summary(train.lm3) #See selected variables below for which ones consistently had a significance code above 0.001 
 
 train.lm4 <- lm(SalePrice~LotArea+OverallQual+OverallCond+YearBuilt+RoofMatl+
@@ -223,8 +225,28 @@ write.table(mypreds.lm3, file = "eih2nn_houses_lm2.csv", row.names=F, sep=",") #
 
 
 
+##### ANOTHER PARAMETRIC -- ABOVE BUT INCLUDING ALL VARIABLES WITH ANY SUBVARIABLES OF HIGH SIGNIFICANCE  #####
+
+train.lm6 <- lm(SalePrice~MSZoning+LotArea+Neighborhood+OverallQual+OverallCond+
+                   YearBuilt+RoofMatl+ExterQual+BsmtQual+BsmtExposure+
+                   BsmtUnfSF+FirstFlrSF+SecFlrSF+KitchenQual+PoolQC, data=train.2)
+
+summary(train.lm6)
+
+#Of note, unable to use validation due to variables that are not consistent across both
+#the training and validations sets (i.e. subvariables with too few observations across the whole set)
+
+mypreds.lm3 <- data.frame(predict(train.lm6, newdata = test))  #Put these values into a vector
+colnames(mypreds.lm3)[1] <- "SalePrice"
+Id = 1461:2919
+mypreds.lm3$Id <- Id
+mypreds.lm3 <- mypreds.lm3[,c(2,1)] 
 
 
+#THIRD LM METHOD -- SCORE = 0.174 on Kaggle (best score)
+write.table(mypreds.lm3, file = "eih2nn_houses_lm3.csv", row.names=F, sep=",") #Write out to a csv
+
+######################################################################
 
 ##### NON-PARAMETRIC APPROACH #####
 
@@ -288,7 +310,7 @@ colnames(knn.preds)[1] <- "SalePrice"
 knn.preds$Id <- Id
 knn.preds1 <- knn.preds[,c(2,1)]
 
-#KNN PREDICTIONS -- SCORE = 0.194 on Kaggle (PERSONAL BEST)
+#KNN PREDICTIONS -- SCORE = 0.194 on Kaggle (second best score)
 write.table(knn.preds1, file = "eih2nn_houses_knn.csv", row.names=F, sep=",") #Write out to a csv
 
 
