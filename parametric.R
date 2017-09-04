@@ -206,14 +206,66 @@ write.table(mypreds.lm3, file = "eih2nn_houses_lm2.csv", row.names=F, sep=",") #
 
 # Non-parametric Approach
 
+#Install and load class and caret packages to run knn function 
 install.packages("class")
-library(class)  # install package class to run knn function 
+library(class)  
+install.packages("caret")
+library(caret)
 
-validdrops <- c("predictions","predictions2")
-validate.2 <- validate[ , !(names(validate) %in% validdrops)]
-validate.3 <- validate.2[ , (!names(train.2) %in% factors)]
+train.3 <- train.2[ , (!names(train.2) %in% factors)] #Select only columns with numeric values
+test.2 <- test[ , (!names(test) %in% factors)] #Repeat for test set
+validate.2 <- validate[ , (!names(validate) %in% factors)] #Repeat for validation set
 
-train.3 <- train.2[ , (!names(train.2) %in% factors)]
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 1)
+set.seed(22)
+knn.fit <- train(SalePrice ~., data = train.3, method = "knn",
+                 trControl=trctrl,
+                 preProcess = c("center", "scale"),
+                 tuneLength = 10)
+knn.fit
+#k-Nearest Neighbors 
+#730 samples
+#36 predictor
 
-predknn1 <- knn(train = train.3, test = validate.3, cl = train.2$SalePrice, k=3) 
+#Pre-processing: centered (36), scaled (36) 
+#Resampling: Cross-Validated (10 fold, repeated 1 times) 
+#Summary of sample sizes: 658, 658, 657, 656, 656, 658, ... 
+#Resampling results across tuning parameters:
+  
+#k   RMSE      Rsquared 
+#5  40701.88  0.7586845
+#7  40595.15  0.7667168
+#9  39956.75  0.7763865
+#11  40162.69  0.7801505
+#13  40197.83  0.7841858
+#15  40091.22  0.7894252
+#17  40388.08  0.7894150
+#19  40211.36  0.7933000
+#21  40339.65  0.7947003
+#23  40536.55  0.7950865
+
+#RMSE was used to select the optimal model using  the smallest value.
+#The final value used for the model was k = 9.
+
+validate.3 <- subset(validate.2, select = -c(predictions, predictions2)) #Create new df without those columns
+validate.4 <- subset(validate.2, select = -c(SalePrice))
+
+knn.validate <- predict(knn.fit, newdata = validate.4)
+validate.3$knnpredictions <- knn.validate
+av_diff3 <- mean(abs(validate.3$knnpredictions - validate.3$SalePrice))
+av_diff3 #21986.34
+
+knn.preds <- predict(knn.fit, newdata = test.2)
+
+knn.preds <- data.frame(predict(knn.fit, newdata = test.2))
+
+colnames(knn.preds)[1] <- "SalePrice"
+knn.preds$Id <- Id
+knn.preds1 <- knn.preds[,c(2,1)] 
+
+
+#FINAL FIRST PREDICTIONS -- SCORE = 0.25 on Kaggle
+write.table(knn.preds1, file = "eih2nn_houses_knn.csv", row.names=F, sep=",") #Write out to a csv
+
+
 
