@@ -4,14 +4,22 @@
 #Jenn Cruser, jc4pg
 #Boh Young Suh, bs6ea
 
-##### DATA CLEANING AND PREPARATION #####
+#####################################################
 
-library(tidyverse) #Load the core tidyverse packages: ggplot2, tibble, tidyr, readr, purrr, and dplyr
+#Install (if necessary) and load the core tidyverse packages: ggplot2, tibble, tidyr, readr, purrr, and dplyr
+library(tidyverse) 
+#Additionally, install/load the class and caret packages to run the knn functions 
+library(class)  
+library(caret)
 
 #Read in files:
 train <- read_csv("train.csv") #Read in the comma separated value data file for training the model
 test <- read_csv("test.csv") #Read in the csv data file for testing the model
-sample <- read_csv("sample_submission.csv") #Read in the csv data file for sample submission
+sample <- read_csv("sample_submission.csv") #Read in the csv data file for sample submission (for reference)
+
+#####################################################
+
+##### DATA CLEANING AND PREPARATION #####
 
 #Replace NA with "None" for all relevant columns in both training and testing sets
 Nones <- c("Alley", "BsmtQual", "BsmtCond", "BsmtExposure", "BsmtFinType1", "BsmtFinType2", 
@@ -25,11 +33,10 @@ for(i in 1:length(Nones)) {
   test[,Nones][i][is.na(test[,Nones][i])] = 'None'
 }
 
-#Subset to cross validate later
+#Subset to validate prediction models later
 sub <- sample(1:1460,size=730) 
 train.2 <- train[sub,]     #Select subset for training
 validate <- train[-sub,]  #Set aside subset for validation
-
 
 #Use factor to adjust the variables that are categorical
 factors <- c("MSZoning","Street","LotShape","LandContour","Utilities","LotConfig","LandSlope",
@@ -40,15 +47,15 @@ factors <- c("MSZoning","Street","LotShape","LandContour","Utilities","LotConfig
              "PavedDrive","SaleType","SaleCondition","Alley","PoolQC", "Fence", "MiscFeature", "FireplaceQu")
 
 train.2[factors] = lapply(train.2[factors], factor)
-test[factors] = lapply(test[factors], factor) #Also do this for the test set
-validate[factors] = lapply(validate[factors], factor) #Also for the validation set
+test[factors] = lapply(test[factors], factor) #Repeat for the test set
+validate[factors] = lapply(validate[factors], factor) #Repeat for the validation set
 
-#Change all columns with integers to the numeric class
+#Change all columns with integers to the numeric class (using lapply function)
 train.2[ , (!names(train.2) %in% factors)] = lapply(train.2[ , (!names(train.2) %in% factors)], as.numeric)
 test[ , (!names(test) %in% factors)] = lapply(test[ , (!names(test) %in% factors)], as.numeric)
 validate[ , (!names(validate) %in% factors)] = lapply(validate[ , (!names(validate) %in% factors)], as.numeric)
 
-sapply(train.2, class) #Check classes to make sure everything worked correctly
+sapply(train.2, class) #Check classes to make sure everything worked correctly (should have only numeric and factor)
 
 #Create mode function
 Mode <- function(x, na.rm) {
@@ -80,13 +87,13 @@ for (var in 1:ncol(validate)) {
 }
 
 #Replace all NA values in "numeric" columns with the mean of that column 
-#(repeat for test and validation sets)
 for (var in 1:ncol(train.2)) {
   if (lapply((train.2[,var]), class)=="numeric") {
     train.2[is.na(train.2[,var]),var] <- sapply(train.2[,var], mean, na.rm=TRUE)
   }
 }
 
+#Repeat for test and validation sets
 for (var in 1:ncol(test)) {
   if (lapply((test[,var]), class)=="numeric") {
     test[is.na(test[,var]),var] <- sapply(train.2[,var], mean, na.rm=TRUE)
@@ -99,7 +106,7 @@ for (var in 1:ncol(validate)) {
   }
 }
 
-#Change names of columns that have numbers in them
+#Change names of columns with numbers as the first character (this creates a problem when listing vars of interest for linear models)
 names(train.2)[names(train.2) == '1stFlrSF'] <- 'FirstFlrSF'
 names(train.2)[names(train.2) == '2ndFlrSF'] <- 'SecFlrSF'
 names(train.2)[names(train.2) == '3SsnPorch'] <- 'TriSsnPorch'
@@ -112,71 +119,13 @@ names(validate)[names(validate) == '1stFlrSF'] <- 'FirstFlrSF'
 names(validate)[names(validate) == '2ndFlrSF'] <- 'SecFlrSF'
 names(validate)[names(validate) == '3SsnPorch'] <- 'TriSsnPorch'
 
+#####################################################
 
+##### PARAMETRIC APPROACH #####
 
+#Create a linear model that takes into account all of the variables, from both the numeric and factor classes
 
-
-##### PARAMETRIC APPROACH WITH NUMERIC VARIABLES OF INTEREST TO START #####
-
-#Run a linear regression model with a few numeric variables of interest
-train.lm1 <- lm(SalePrice~LotArea+YearBuilt+TotalBsmtSF+FirstFlrSF+SecFlrSF+FullBath+HalfBath+TotRmsAbvGrd+PoolArea+YrSold, data=train.2)
-summary(train.lm1)
-
-#EXAMPLE OUTPUT (FROM ONE RUN):
-#Coefficients:
-#  Estimate Std. Error t value Pr(>|t|)    
-#  (Intercept)  -2.420e+06  2.394e+06  -1.011 0.312466    
-#  LotArea       5.702e-01  1.883e-01   3.028 0.002547 ** 
-#  YearBuilt     8.036e+02  7.481e+01  10.743  < 2e-16 ***
-#  TotalBsmtSF   4.678e+01  7.339e+00   6.374 3.29e-10 ***
-#  FirstFlrSF    1.001e+02  9.462e+00  10.583  < 2e-16 ***
-#  SecFlrSF      9.399e+01  7.545e+00  12.457  < 2e-16 ***
-#  FullBath     -1.205e+03  4.708e+03  -0.256 0.798127    
-#  HalfBath     -2.516e+03  4.543e+03  -0.554 0.579957    
-#  TotRmsAbvGrd -2.805e+03  1.717e+03  -1.634 0.102646    
-#  PoolArea      1.931e+02  5.400e+01   3.576 0.000372 ***
-#  YrSold        4.155e+02  1.189e+03   0.350 0.726782    
-
-#  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-#Residual standard error: 42320 on 719 degrees of freedom
-#Multiple R-squared:  0.7445,	Adjusted R-squared:  0.741 
-#F-statistic: 209.5 on 10 and 719 DF,  p-value: < 2.2e-16
-
-#Re-run with fewer variables, based on significance from last run
-train.lm2 <- lm(SalePrice~LotArea+YearBuilt+TotalBsmtSF+FirstFlrSF+SecFlrSF+PoolArea, data=train.2)
-summary(train.lm2) #All have high significance
-
-validpreds <- predict(train.lm2, newdata = validate)
-validate$predictions <- validpreds
-
-for (i in 1:nrow(validate)) {
-  ((abs((validate[i,"predictions"])-(validate[i,"SalePrice"])))/(validate[i,"predictions"]))*100 -> validate[i,"PercentOff1"]
-}
-AvPercentOff.lm1 <- mean(validate$PercentOff1)
-AvPercentOff.lm1 #17.07737 % off of true sale price on average 
-#Of note, this came down as far as 14% on other runs
-
-predict(train.lm2, newdata = test) #Use predict function to apply the linear model to the test data
-mypreds.lm <- data.frame(predict(train.lm2, newdata = test))  #Put these values into a dataframe
-
-colnames(mypreds.lm)[1] <- "SalePrice"
-
-Id = 1461:2919
-mypreds.lm$Id <- Id
-mypreds.lm1 <- mypreds.lm[,c(2,1)] 
-
-#FIRST LM METHOD -- SCORE = 0.22 on Kaggle
-write.table(mypreds.lm1, file = "eih2nn_houses_lm1.csv", row.names=F, sep=",") #Write out to a csv
-
-
-
-
-
-##### ANOTHER PARAMETRIC APPROACH WITH ALL VARIABLES TO START #####
-##### SELECTED ONLY VARIABLES THAT HAD A MAJORITY OF SUBVARIABLES WITH HIGH SIGNIFICANCE  #####
-
-train.lm3 <- lm(SalePrice~MSSubClass+MSZoning+LotFrontage+LotArea+Street+LotShape+LandContour+
+train.lm <- lm(SalePrice~MSSubClass+MSZoning+LotFrontage+LotArea+Street+LotShape+LandContour+
                    LotConfig+LandSlope+Neighborhood+Condition1+Condition2+BldgType+HouseStyle+OverallQual+
                    OverallCond+YearBuilt+YearRemodAdd+RoofStyle+RoofMatl+Exterior1st+Exterior2nd+MasVnrType+MasVnrArea+
                    ExterQual+ExterCond+Foundation+BsmtQual+BsmtCond+BsmtExposure+BsmtFinType1+BsmtFinSF1+BsmtFinType2+
@@ -186,163 +135,150 @@ train.lm3 <- lm(SalePrice~MSSubClass+MSZoning+LotFrontage+LotArea+Street+LotShap
                    PavedDrive+WoodDeckSF+OpenPorchSF+EnclosedPorch+TriSsnPorch+ScreenPorch+PoolArea+MiscVal+MoSold+YrSold+
                    SaleType+SaleCondition, data=train.2)
 
-summary(train.lm3) #See selected variables below for which ones consistently had a significance code above 0.001 
+summary(train.lm) #Using this summary, select out all variables with a majority of subvariables showing significance over .001
 
-train.lm4 <- lm(SalePrice~LotArea+OverallQual+OverallCond+YearBuilt+RoofMatl+
+#Over many runs, these seem to be LotArea, OverallQual, OverallCond, YearBuilt, RoofMatl, ExterQual, and BsmtFinSF1...
+train.lm <- lm(SalePrice~LotArea+OverallQual+OverallCond+YearBuilt+RoofMatl+
                   ExterQual+BsmtFinSF1, data=train.2)
-summary(train.lm4)
 
-train.lm5 <- lm(SalePrice~LotArea+OverallQual+ExterQual+BsmtFinSF1, data=train.2)
-summary(train.lm5)
-mse.lm5 <- mean(train.lm5$residuals^2)
-mse.lm5 #1860451135...
+summary(train.lm) #YearBuild and RoofMatl do not appear to have high significance in this grouping
 
-validpreds2 <- predict(train.lm5, newdata = validate)
-validate$predictions2 <- validpreds2
+train.lm <- lm(SalePrice~LotArea+OverallQual+ExterQual+BsmtFinSF1, data=train.2)
 
+summary(train.lm) #All variables have the highest possible significance in this final version of the model
+
+mse.lm <- mean(train.lm$residuals^2) #Find mean square error
+mse.lm #1553522361 (but this varies depending on the slice of the training data)
+
+validpreds <- predict(train.lm, newdata = validate) #Use predict function to use this model on the validation set
+validate$predictions <- validpreds #Create a new column in the validation dataframe with these predictions
+
+#Create another column and fill with the percent difference in sale price between the predicted numbers and true numbers
 for (i in 1:nrow(validate)) {
-  ((abs((validate[i,"predictions2"])-(validate[i,"SalePrice"])))/(validate[i,"predictions2"]))*100 -> validate[i,"PercentOff2"]
+  ((abs((validate[i,"predictions"])-(validate[i,"SalePrice"])))/(validate[i,"predictions"]))*100 -> validate[i,"PercentOff"]
 }
-AvPercentOff.lm2 <- mean(validate$PercentOff2)
-AvPercentOff.lm2 #16.89892 % off of true sale price on average 
-#This got as low as 16.3% on other runs, but was generally comparable to the 
-#results from the other linear model approach
 
-#WRITE UP TEST PREDITIONS
-predict(train.lm5, newdata = test) #Use predict function to apply the linear model to the test data
-mypreds.lm2 <- data.frame(predict(train.lm5, newdata = test))  #Put these values into a dataframe
+AvPercentOff.lm <- mean(validate$PercentOff) #Find mean % difference between predicted and real sale prices in the validation set
+AvPercentOff.lm #This gets as low as 15.5% on certain slices of the training data
 
-colnames(mypreds.lm2)[1] <- "SalePrice"
+#Create predictions for test set
+predict(train.lm, newdata = test) #Use the predict function to apply the above linear model to the test data
+mypreds.lm <- data.frame(predict(train.lm, newdata = test))  #Put these values into a dataframe
 
-Id = 1461:2919
-mypreds.lm2$Id <- Id
-mypreds.lm3 <- mypreds.lm2[,c(2,1)] 
+colnames(mypreds.lm)[1] <- "SalePrice" #Assign the column the appropriate name
 
-mypreds.lm3[757,2] <- 0
+Id = 1461:2919 #Create a variable ID with the appropriate numbers for the kaggle submission (1461-2912)
+mypreds.lm$Id <- Id #Add this column to the newest dataframe
+mypreds.lm <- mypreds.lm[,c(2,1)] #Switch the columns so that ID is the first column
 
-#SECOND LM METHOD -- SCORE = 0.25 on Kaggle (worse score, as expected)
-write.table(mypreds.lm3, file = "eih2nn_houses_lm2.csv", row.names=F, sep=",") #Write out to a csv
+mypreds.lm[757,2] <- 0 #Change the one negative prediction to 0, as Kaggle will not accept negative values for sale prices
 
+write.table(mypreds.lm, file = "houses_lm.csv", row.names=F, sep=",") #Write out to a csv
 
+#FIRST LM METHOD -- SCORE = 0.25 on Kaggle
 
-##### ANOTHER PARAMETRIC -- ABOVE BUT INCLUDING ALL VARIABLES WITH ANY SUBVARIABLES OF HIGH SIGNIFICANCE (**)  #####
+#####################################################
 
-train.lm6 <- lm(SalePrice~LotArea+Neighborhood+OverallQual+OverallCond+
+#After a few runs and tests using only variables with a majority of subvariables showing significance higher than .001,
+#we decided to try including all variables with any subvariables showing significance higher than .001 (**).
+#All variables of this nature are listed below and were used to train our second model (train.lm2).
+
+train.lm2 <- lm(SalePrice~LotArea+Neighborhood+OverallQual+OverallCond+
                    YearBuilt+RoofMatl+ExterQual+BsmtQual+BsmtExposure+
                    BsmtUnfSF+FirstFlrSF+SecFlrSF+KitchenQual+PoolArea+ScreenPorch, data=train.2)
 
-summary(train.lm6)
+summary(train.lm2) #At least one subvariable for each variable in this set shows a high significance value
+#on most, but not every, run with different slices of the training data
 
-#Of note, we were unable to use validation due to variables that are not consistent across both
+#Of note, we were unable to use validation for this model due to variables that are not consistent across both
 #the training and validations sets (i.e. subvariables with too few observations across the whole set)
 
-mypreds.lm3 <- data.frame(predict(train.lm6, newdata = test))  #Put these values into a vector
-colnames(mypreds.lm3)[1] <- "SalePrice"
-Id = 1461:2919
-mypreds.lm3$Id <- Id
-mypreds.lm3 <- mypreds.lm3[,c(2,1)] 
+mypreds.lm2 <- data.frame(predict(train.lm2, newdata = test))  #Use predict function to create predictions for the test set
+#using the new linear model and place these predictions into a new dataframe
 
+colnames(mypreds.lm2)[1] <- "SalePrice" #Assign the column the appropriate name
+mypreds.lm2$Id <- Id #Add ID column
+mypreds.lm2 <- mypreds.lm2[,c(2,1)] #Switch order of columns
 
-#THIRD LM METHOD -- SCORE = 0.158 on Kaggle (best score)
-write.table(mypreds.lm3, file = "eih2nn_houses_lm3.csv", row.names=F, sep=",") #Write out to a csv
+write.table(mypreds.lm2, file = "houses_lm2.csv", row.names=F, sep=",") #Write out to a csv
+
+#SECOND LM METHOD -- SCORE = 0.158 on Kaggle (BEST SCORE)
 
 ######################################################################
 
 ##### NON-PARAMETRIC APPROACH #####
 
-#Install and load class and caret packages to run knn function 
-install.packages("class")
-library(class)  
-install.packages("caret")
-library(caret)
+#For our non-parametric approach, we decided to use KNN...
+
+#First, we prepared our data sets by selecting out numeric variables only
 
 train.3 <- train.2[ , (!names(train.2) %in% factors)] #Select only columns with numeric values
 test.2 <- test[ , (!names(test) %in% factors)] #Repeat for test set
 validate.2 <- validate[ , (!names(validate) %in% factors)] #Repeat for validation set
 
-trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 1)
-set.seed(22)
-knn.fit <- train(SalePrice ~., data = train.3, method = "knn",
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 1) #Create a training control
+set.seed(22) #Set the seed to a random number 
+
+#Of note, we repeated this with different seeds several times to make sure we hadn't picked one that would produce a rare K result
+
+knn.fit <- train(SalePrice ~., data = train.3, method = "knn",  #Train a model using knn, with 10 runs of different K values
                  trControl=trctrl,
                  preProcess = c("center", "scale"),
                  tuneLength = 10)
-knn.fit
+
+knn.fit #See output below...
+
 #k-Nearest Neighbors 
 #730 samples
 #36 predictor
 
 #Pre-processing: centered (36), scaled (36) 
 #Resampling: Cross-Validated (10 fold, repeated 1 times) 
-#Summary of sample sizes: 658, 658, 657, 656, 656, 658, ... 
+#Summary of sample sizes: 657, 658, 656, 656, 658, 657, ... 
 #Resampling results across tuning parameters:
-
+  
 #k   RMSE      Rsquared 
-#5  40701.88  0.7586845
-#7  40595.15  0.7667168
-#9  39956.75  0.7763865
-#11  40162.69  0.7801505
-#13  40197.83  0.7841858
-#15  40091.22  0.7894252
-#17  40388.08  0.7894150
-#19  40211.36  0.7933000
-#21  40339.65  0.7947003
-#23  40536.55  0.7950865
+#5  40689.33  0.7563691
+#7  39811.12  0.7712492
+#9  39649.86  0.7788696
+#11  39864.37  0.7829757
+#13  39496.73  0.7902631
+#15  39503.36  0.7951439
+#17  39648.64  0.8001914
+#19  39942.76  0.8007253
+#21  40129.84  0.8027504
+#23  40359.44  0.8021267
 
 #RMSE was used to select the optimal model using  the smallest value.
-#The final value used for the model was k = 9.
 
-validate.3 <- subset(validate.2, select = -c(predictions, predictions2, PercentOff1, PercentOff2)) #Create new df without those columns
-validate.4 <- subset(validate.2, select = -c(SalePrice))
+#The final value used for the model was k = 13.
 
-knn.validate <- predict(knn.fit, newdata = validate.4)
-validate.3$knnpredictions <- knn.validate
+validate <- subset(validate, select = -c(predictions, PercentOff)) #Overwrite df to exclude columns created for previous linear model
+validate.2 <- subset(validate, select = -c(SalePrice)) #Create new validation df without the real sale prices
 
-for (i in 1:nrow(validate.3)) {
-  ((abs((validate.3[i,"knnpredictions"])-(validate.3[i,"SalePrice"])))/(validate.3[i,"SalePrice"]))*100 -> validate.3[i,"PercentOff"]
+knn.validate <- predict(knn.fit, newdata = validate.2) #Use KNN model for the validation set and put into a vector
+validate$knnpredictions <- knn.validate #Add vector values into a new column in the validation dataframe
+
+#Find percent difference from real sale prices... 
+for (i in 1:nrow(validate)) {
+  ((abs((validate[i,"knnpredictions"])-(validate[i,"SalePrice"])))/(validate[i,"SalePrice"]))*100 -> validate[i,"PercentOff"]
 }
-AvPercentOffKNN <- mean(validate.3$PercentOff)
-AvPercentOffKNN #12.77642 % off of true sale price on average
 
-knn.preds <- predict(knn.fit, newdata = test.2)
-knn.preds <- data.frame(predict(knn.fit, newdata = test.2))
+AvPercentOffKNN <- mean(validate$PercentOff) #Evaluate the mean percentage difference
+AvPercentOffKNN #11.4% off of true sale prices in validation set (on average)
 
-colnames(knn.preds)[1] <- "SalePrice"
-knn.preds$Id <- Id
-knn.preds1 <- knn.preds[,c(2,1)]
+knn.preds <- predict(knn.fit, newdata = test.2) #Use KNN model for test data
+knn.preds <- data.frame(predict(knn.fit, newdata = test.2)) #Put predictions into a new dataframe
 
-#KNN PREDICTIONS -- SCORE = 0.194 on Kaggle (second best score)
-write.table(knn.preds1, file = "eih2nn_houses_knn.csv", row.names=F, sep=",") #Write out to a csv
+colnames(knn.preds)[1] <- "SalePrice" #Assign column name
+knn.preds$Id <- Id #Add ID values
+knn.preds <- knn.preds[,c(2,1)] #Switch column order
 
+write.table(knn.preds, file = "houses_knn.csv", row.names=F, sep=",") #Write out to a csv
 
-##### NON-PARAMETRIC APPROACH WITH KNN AND K=13 #####
+#KNN PREDICTIONS -- SCORE = 0.185 on Kaggle
 
-set.seed(150)
-knn.fit2 <- train(SalePrice ~., data = train.3, method = "knn",
-                 trControl=trctrl,
-                 preProcess = c("center", "scale"),
-                 tuneLength = 10)
-knn.fit2
-#K = 13
+#####################################################
 
-validate.5 <- subset(validate.2, select = -c(predictions, predictions2, PercentOff1, PercentOff2)) #Create new df without those columns
-validate.6 <- subset(validate.2, select = -c(SalePrice))
-
-knn.validate2 <- predict(knn.fit2, newdata = validate.6)
-validate.5$knnpredictions2 <- knn.validate2
-
-for (i in 1:nrow(validate.5)) {
-  ((abs((validate.5[i,"knnpredictions2"])-(validate.5[i,"SalePrice"])))/(validate.5[i,"SalePrice"]))*100 -> validate.5[i,"PercentOff"]
-}
-AvPercentOffKNN2 <- mean(validate.5$PercentOff)
-AvPercentOffKNN2 #12.34 % off of true sale price on average
-
-knn.preds2 <- data.frame(predict(knn.fit2, newdata = test.2))
-
-colnames(knn.preds2)[1] <- "SalePrice"
-knn.preds2$Id <- Id
-knn.preds3 <- knn.preds2[,c(2,1)]
-
-#KNN PREDICTIONS - SCORE = 0.195 on kaggle (not as good as when k=9)
-write.table(knn.preds3, file = "eih2nn_houses_knn2.csv", row.names=F, sep=",") #Write out to a csv
-
-
+#We repeated the KNN approach with K=9 (as this was also frequent when using other seeds/slices of the subsetted training data)
+#...It produced essentially the same result as K=13 on kaggle
