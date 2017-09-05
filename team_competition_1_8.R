@@ -4,6 +4,7 @@
 #Jenn Cruser, jc4pg
 #Boh Young Suh, bs6ea
 
+#FINAL WORK PRIOR TO 9/5/17
 #####################################################
 
 #Install (if necessary) and load the core tidyverse packages: ggplot2, tibble, tidyr, readr, purrr, and dplyr
