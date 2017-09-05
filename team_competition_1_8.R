@@ -229,11 +229,11 @@ write.table(mypreds.lm3, file = "eih2nn_houses_lm2.csv", row.names=F, sep=",") #
 
 train.lm6 <- lm(SalePrice~LotArea+Neighborhood+OverallQual+OverallCond+
                    YearBuilt+RoofMatl+ExterQual+BsmtQual+BsmtExposure+
-                   BsmtUnfSF+FirstFlrSF+SecFlrSF+KitchenQual+PoolQC, data=train.2)
+                   BsmtUnfSF+FirstFlrSF+SecFlrSF+KitchenQual+PoolArea+ScreenPorch, data=train.2)
 
 summary(train.lm6)
 
-#Of note, unable to use validation due to variables that are not consistent across both
+#Of note, we were unable to use validation due to variables that are not consistent across both
 #the training and validations sets (i.e. subvariables with too few observations across the whole set)
 
 mypreds.lm3 <- data.frame(predict(train.lm6, newdata = test))  #Put these values into a vector
@@ -243,7 +243,7 @@ mypreds.lm3$Id <- Id
 mypreds.lm3 <- mypreds.lm3[,c(2,1)] 
 
 
-#THIRD LM METHOD -- SCORE = 0.16900 on Kaggle (best score)
+#THIRD LM METHOD -- SCORE = 0.158 on Kaggle (best score)
 write.table(mypreds.lm3, file = "eih2nn_houses_lm3.csv", row.names=F, sep=",") #Write out to a csv
 
 ######################################################################
