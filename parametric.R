@@ -1,9 +1,3 @@
-#KAGGLE HOUSE PRICES COMPETITION
-#Team = Competition 1-8
-#Elizabeth Homan, eih2nn
-#Jenn Cruser, jc4pg
-#Boh Young Suh, bs6ea
-
 ##### DATA CLEANING AND PREPARATION #####
 
 library(tidyverse) #Load the core tidyverse packages: ggplot2, tibble, tidyr, readr, purrr, and dplyr
