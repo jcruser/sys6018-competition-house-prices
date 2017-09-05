@@ -225,9 +225,9 @@ write.table(mypreds.lm3, file = "eih2nn_houses_lm2.csv", row.names=F, sep=",") #
 
 
 
-##### ANOTHER PARAMETRIC -- ABOVE BUT INCLUDING ALL VARIABLES WITH ANY SUBVARIABLES OF HIGH SIGNIFICANCE  #####
+##### ANOTHER PARAMETRIC -- ABOVE BUT INCLUDING ALL VARIABLES WITH ANY SUBVARIABLES OF HIGH SIGNIFICANCE (**)  #####
 
-train.lm6 <- lm(SalePrice~MSZoning+LotArea+Neighborhood+OverallQual+OverallCond+
+train.lm6 <- lm(SalePrice~LotArea+Neighborhood+OverallQual+OverallCond+
                    YearBuilt+RoofMatl+ExterQual+BsmtQual+BsmtExposure+
                    BsmtUnfSF+FirstFlrSF+SecFlrSF+KitchenQual+PoolQC, data=train.2)
 
@@ -243,7 +243,7 @@ mypreds.lm3$Id <- Id
 mypreds.lm3 <- mypreds.lm3[,c(2,1)] 
 
 
-#THIRD LM METHOD -- SCORE = 0.174 on Kaggle (best score)
+#THIRD LM METHOD -- SCORE = 0.16900 on Kaggle (best score)
 write.table(mypreds.lm3, file = "eih2nn_houses_lm3.csv", row.names=F, sep=",") #Write out to a csv
 
 ######################################################################
